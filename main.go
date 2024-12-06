@@ -51,7 +51,8 @@ func main() {
 
 	go func() {
 		for {
-			msgType, msgByte, err := conn.ReadMessage()
+			var msg Msg
+			err := conn.ReadJSON(&msg)
 			if err != nil {
 				select {
 				case <-exitSignal.Done():
@@ -61,7 +62,7 @@ func main() {
 					return
 				}
 			}
-			slog.Info("Message received!", slog.String("message", string(msgByte)), slog.Int("msgtype", msgType))
+			slog.Info("Message received!", slog.String("username", msg.Username), slog.String("message", string(msg.Message)))
 		}
 	}()
 
