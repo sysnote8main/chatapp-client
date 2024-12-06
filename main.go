@@ -11,6 +11,11 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+type Msg struct {
+	Username string
+	Message  string
+}
+
 var (
 	dialer = websocket.Dialer{
 		ReadBufferSize:  1024,
@@ -21,6 +26,12 @@ var (
 func main() {
 	exitSignal, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
+
+	scanner := bufio.NewScanner(os.Stdin)
+
+	fmt.Print("Username: ")
+	scanner.Scan()
+	username := scanner.Text()
 
 	conn, _, err := dialer.Dial("ws://localhost:8080/ws", nil)
 	if err != nil {
@@ -38,12 +49,11 @@ func main() {
 		os.Exit(0)
 	}()
 
-	scanner := bufio.NewScanner(os.Stdin)
 	for {
 		fmt.Print("Message: ")
 		scanner.Scan()
 
-		err = conn.WriteMessage(websocket.TextMessage, []byte(scanner.Text()))
+		err = conn.WriteJSON(Msg{Username: username, Message: scanner.Text()})
 		if err != nil {
 			slog.Error("Failed to send message", slog.Any("error", err))
 			return
