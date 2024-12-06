@@ -49,8 +49,23 @@ func main() {
 		os.Exit(0)
 	}()
 
+	go func() {
+		for {
+			msgType, msgByte, err := conn.ReadMessage()
+			if err != nil {
+				select {
+				case <-exitSignal.Done():
+					return
+				default:
+					slog.Error("Failed to read message", slog.Any("error", err))
+					return
+				}
+			}
+			slog.Info("Message received!", slog.String("message", string(msgByte)), slog.Int("msgtype", msgType))
+		}
+	}()
+
 	for {
-		fmt.Print("Message: ")
 		scanner.Scan()
 
 		err = conn.WriteJSON(Msg{Username: username, Message: scanner.Text()})
@@ -58,13 +73,5 @@ func main() {
 			slog.Error("Failed to send message", slog.Any("error", err))
 			return
 		}
-
-		msgType, msgByte, err := conn.ReadMessage()
-		if err != nil {
-			slog.Error("Failed to read message", slog.Any("error", err))
-			return
-		}
-
-		slog.Info("Message received!", slog.String("message", string(msgByte)), slog.Int("msgtype", msgType))
 	}
 }
