@@ -2,9 +2,11 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
+	"os/signal"
 
 	"github.com/gorilla/websocket"
 )
@@ -17,11 +19,24 @@ var (
 )
 
 func main() {
+	exitSignal, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+
 	conn, _, err := dialer.Dial("ws://localhost:8080/ws", nil)
 	if err != nil {
 		slog.Error("Failed to dial", slog.Any("error", err))
 		return
 	}
+
+	// Graceful shutdown
+	go func() {
+		<-exitSignal.Done()
+		err = conn.Close()
+		if err != nil {
+			slog.Error("Failed to close connection", slog.Any("error", err))
+		}
+		os.Exit(0)
+	}()
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
@@ -41,9 +56,5 @@ func main() {
 		}
 
 		slog.Info("Message received!", slog.String("message", string(msgByte)), slog.Int("msgtype", msgType))
-	}
-	err = conn.Close()
-	if err != nil {
-		slog.Error("Failed to close connection", slog.Any("error", err))
 	}
 }
