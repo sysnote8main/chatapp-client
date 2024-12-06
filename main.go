@@ -24,22 +24,24 @@ func main() {
 	}
 
 	scanner := bufio.NewScanner(os.Stdin)
-	fmt.Print("Message: ")
-	scanner.Scan()
+	for {
+		fmt.Print("Message: ")
+		scanner.Scan()
 
-	err = conn.WriteMessage(websocket.TextMessage, []byte(scanner.Text()))
-	if err != nil {
-		slog.Error("Failed to send message", slog.Any("error", err))
-		return
+		err = conn.WriteMessage(websocket.TextMessage, []byte(scanner.Text()))
+		if err != nil {
+			slog.Error("Failed to send message", slog.Any("error", err))
+			return
+		}
+
+		msgType, msgByte, err := conn.ReadMessage()
+		if err != nil {
+			slog.Error("Failed to read message", slog.Any("error", err))
+			return
+		}
+
+		slog.Info("Message received!", slog.String("message", string(msgByte)), slog.Int("msgtype", msgType))
 	}
-
-	msgType, msgByte, err := conn.ReadMessage()
-	if err != nil {
-		slog.Error("Failed to read message", slog.Any("error", err))
-		return
-	}
-
-	slog.Info("Message received!", slog.String("message", string(msgByte)), slog.Int("msgtype", msgType))
 	err = conn.Close()
 	if err != nil {
 		slog.Error("Failed to close connection", slog.Any("error", err))
