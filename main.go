@@ -1,7 +1,10 @@
 package main
 
 import (
+	"bufio"
+	"fmt"
 	"log/slog"
+	"os"
 
 	"github.com/gorilla/websocket"
 )
@@ -20,7 +23,11 @@ func main() {
 		return
 	}
 
-	err = conn.WriteMessage(websocket.TextMessage, []byte("Hello World!!!!!!!!"))
+	scanner := bufio.NewScanner(os.Stdin)
+	fmt.Print("Message: ")
+	scanner.Scan()
+
+	err = conn.WriteMessage(websocket.TextMessage, []byte(scanner.Text()))
 	if err != nil {
 		slog.Error("Failed to send message", slog.Any("error", err))
 		return
